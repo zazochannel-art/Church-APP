@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Nav } from "@/components/Nav";
 import { ToastProvider } from "@/components/Toast";
-import { churchName } from "@/lib/data";
+import { getChurch } from "@/lib/store";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +18,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const { name: churchName } = await getChurch();
   return (
     <html lang="ro">
       <head>

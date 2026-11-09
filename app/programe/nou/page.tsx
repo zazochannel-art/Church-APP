@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
-import { people } from "@/lib/data";
+import { getPeople } from "@/lib/store";
 import { NewEventForm } from "./NewEventForm";
 
 export const metadata = { title: "Program nou" };
 
-export default function NewEvent() {
+export default async function NewEvent() {
+  const people = await getPeople();
   const organizers = people.filter((p) => p.group !== "Adolescenți").map((p) => p.name);
   return (
     <>

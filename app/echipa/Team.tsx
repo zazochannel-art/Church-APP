@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Avatar, firstName } from "@/components/Avatar";
 import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/Toast";
+import { assignSlot, confirmSlot } from "@/lib/actions";
 import type { Person, ServingWeek, Volunteer } from "@/lib/types";
+
+type Week = ServingWeek & { id: string };
 
 const SEGS = [
   ["slujire", "Slujire"],
@@ -14,7 +17,7 @@ const SEGS = [
 const DAYS = "LMMJVSD".split("");
 const GROUPS = ["Toți", "Adolescenți", "Tineri", "Lideri"] as const;
 
-export function Team({ weeks: initialWeeks, volunteers, people }: { weeks: ServingWeek[]; volunteers: Volunteer[]; people: Person[] }) {
+export function Team({ weeks: initialWeeks, volunteers, people }: { weeks: Week[]; volunteers: Volunteer[]; people: Person[] }) {
   const toast = useToast();
   const [seg, setSeg] = useState<(typeof SEGS)[number][0]>("slujire");
   const [weeks, setWeeks] = useState(initialWeeks);
@@ -22,16 +25,26 @@ export function Team({ weeks: initialWeeks, volunteers, people }: { weeks: Servi
   const [group, setGroup] = useState<(typeof GROUPS)[number]>("Toți");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  const [, start] = useTransition();
 
   const candidates = [...new Set([...people.map((p) => p.name), ...volunteers.map((v) => v.name)])];
   const free = (w: ServingWeek) => w.teams.reduce((a, t) => a + t.slots.filter((s) => !s.person).length, 0);
-  const assign = (ti: number, si: number, name: string) => {
+  const change = (ti: number, si: number, f: (s: ServingWeek["teams"][number]["slots"][number]) => typeof s) =>
     setWeeks((ws) =>
-      ws.map((w, wi) =>
-        wi !== week ? w : { ...w, teams: w.teams.map((t, i) => (i !== ti ? t : { ...t, slots: t.slots.map((s, j) => (j !== si ? s : { ...s, person: name, status: "asteapta" as const })) })) },
-      ),
+      ws.map((w, wi) => (wi !== week ? w : { ...w, teams: w.teams.map((t, i) => (i !== ti ? t : { ...t, slots: t.slots.map((s, j) => (j !== si ? s : f(s))) })) })),
     );
+  const assign = (ti: number, si: number, name: string) => {
+    change(ti, si, (s) => ({ ...s, person: name, status: "asteapta" }));
+    start(() => assignSlot(weeks[week].id, ti, si, name));
     toast(`Cerere trimisă lui ${firstName(name)}`);
+  };
+  const unassign = (ti: number, si: number) => {
+    change(ti, si, (s) => ({ ...s, person: null, status: undefined }));
+    start(() => assignSlot(weeks[week].id, ti, si, null));
+  };
+  const confirm = (ti: number, si: number) => {
+    change(ti, si, (s) => ({ ...s, status: s.status === "confirmat" ? "asteapta" : "confirmat" }));
+    start(() => confirmSlot(weeks[week].id, ti, si));
   };
   const list = people.filter((p) => (group === "Toți" || p.group === group) && p.name.toLowerCase().includes(query.toLowerCase()));
 
@@ -64,7 +77,7 @@ export function Team({ weeks: initialWeeks, volunteers, people }: { weeks: Servi
                   </span>
                 </div>
                 {t.slots.map((s, si) => (
-                  <div className="slot" key={s.role}>
+                  <div className="slot" key={`${t.name}-${s.role}`}>
                     <span className="r">{s.role}</span>
                     <div className="grow">
                       {s.person ? (
@@ -81,7 +94,21 @@ export function Team({ weeks: initialWeeks, volunteers, people }: { weeks: Servi
                         </select>
                       )}
                     </div>
-                    {s.person && <span className={`status ${s.status === "confirmat" ? "ok" : "warn"}`}>{s.status === "confirmat" ? "Confirmat" : "Așteaptă"}</span>}
+                    {s.person && (
+                      <>
+                        <button
+                          type="button"
+                          className={`status ${s.status === "confirmat" ? "ok" : "warn"}`}
+                          aria-label={`${s.person}: ${s.status === "confirmat" ? "confirmat" : "așteaptă"}. Schimbă`}
+                          onClick={() => confirm(ti, si)}
+                        >
+                          {s.status === "confirmat" ? "Confirmat" : "Așteaptă"}
+                        </button>
+                        <button className="iconx" type="button" aria-label={`Eliberează ${s.role}`} onClick={() => unassign(ti, si)}>
+                          <Icon name="minus" width={2.4} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
