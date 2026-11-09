@@ -1,4 +1,4 @@
-// Domain model for the youth leaders app. Mirrors supabase/migrations/0001_init.sql.
+// Domain model for the youth leaders app.
 
 export type GroupName = "Adolescenți" | "Tineri" | "Lideri";
 
@@ -64,3 +64,5 @@ export type ServingWeek = { label: string; teams: ServingTeam[] };
 export type Task = { id: string; text: string; due: string; soon?: boolean; owner: string; done: boolean };
 
 export type Message = { id: string; audience: string; text: string; when: string; recipients: number; read: number };
+
+export type Audience = { name: string; count: number };

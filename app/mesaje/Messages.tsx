@@ -1,9 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/Toast";
+import { sendMessage } from "@/lib/actions";
 import type { Message } from "@/lib/types";
+
+function when(w: string) {
+  const d = new Date(w);
+  if (Number.isNaN(d.getTime())) return w;
+  const min = Math.round((Date.now() - d.getTime()) / 60000);
+  if (min < 1) return "acum";
+  if (min < 60) return `acum ${min} min`;
+  if (min < 24 * 60) return `azi, ${d.toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit" })}`;
+  return d.toLocaleDateString("ro-RO", { day: "numeric", month: "short" });
+}
 
 export function Messages({
   audiences,
@@ -18,6 +29,7 @@ export function Messages({
   const [audience, setAudience] = useState(initialAudience);
   const [text, setText] = useState("");
   const [sent, setSent] = useState(initialSent);
+  const [pending, start] = useTransition();
   const count = audiences.find((a) => a.name === audience)?.count ?? 0;
 
   return (
@@ -28,9 +40,13 @@ export function Messages({
         onSubmit={(e) => {
           e.preventDefault();
           if (!text.trim()) return toast("Scrie mai întâi mesajul");
-          setSent((s) => [{ id: `m${Date.now()}`, audience, text: text.trim(), when: "acum", recipients: count, read: 0 }, ...s]);
-          setText("");
-          toast(`Trimis la ${count} persoane`);
+          start(async () => {
+            const msg = await sendMessage(audience, text);
+            if (!msg) return toast("Mesajul nu a putut fi salvat");
+            setSent((s) => [msg, ...s]);
+            setText("");
+            toast(`Trimis la ${count} persoane`);
+          });
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -53,7 +69,7 @@ export function Messages({
         </div>
         <div className="row">
           <span className="meta num">Ajunge la {count} persoane</span>
-          <button className="btn" type="submit">
+          <button className="btn" type="submit" disabled={pending}>
             <Icon name="send" />
             Trimite
           </button>
@@ -66,7 +82,7 @@ export function Messages({
           <div className="gl sent" key={m.id}>
             <div className="row">
               <b style={{ fontWeight: 500 }}>Către {m.audience}</b>
-              <span className="meta">{m.when}</span>
+              <span className="meta" suppressHydrationWarning>{when(m.when)}</span>
             </div>
             <p>{m.text}</p>
             <div className="track">

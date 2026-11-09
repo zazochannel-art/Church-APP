@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { EventCard, PageHeader } from "@/components/Bits";
 import { Icon } from "@/components/Icon";
-import { events } from "@/lib/data";
+import { getEvents } from "@/lib/store";
 
 export const metadata = { title: "Programe" };
 
-export default function Programs() {
+export default async function Programs() {
+  const events = await getEvents();
   return (
     <>
       <PageHeader

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "./Icon";
 import type { ReactNode } from "react";
 import type { RunKind, YouthEvent } from "@/lib/types";
 import { Avatar, firstName } from "./Avatar";
@@ -22,7 +23,7 @@ export const KIND: Record<RunKind, { label: string; color: string }> = {
   altele: { label: "Altele", color: "#b3a8ff" },
 };
 
-export function RunSheet({ event }: { event: YouthEvent }) {
+export function RunSheet({ event, onRemove }: { event: YouthEvent; onRemove?: (index: number) => void }) {
   if (!event.run.length) return <div className="gl panel meta">Încă nu ați adăugat ordinea programului.</div>;
   const total = event.run.reduce((a, r) => a + r.minutes, 0);
   return (
@@ -58,6 +59,11 @@ export function RunSheet({ event }: { event: YouthEvent }) {
               <Avatar name={r.lead} />
               {firstName(r.lead)}
             </span>
+            {onRemove && (
+              <button className="iconx" type="button" aria-label={`Scoate „${r.title}”`} onClick={() => onRemove(i)}>
+                <Icon name="minus" width={2.4} />
+              </button>
+            )}
           </div>
         ))}
       </div>
