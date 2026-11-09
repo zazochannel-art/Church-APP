@@ -1,0 +1,28 @@
+import Link from "next/link";
+import { EventCard, PageHeader } from "@/components/Bits";
+import { Icon } from "@/components/Icon";
+import { events } from "@/lib/data";
+
+export const metadata = { title: "Programe" };
+
+export default function Programs() {
+  return (
+    <>
+      <PageHeader
+        eyebrow="Organizare"
+        title="Programe"
+        actions={
+          <Link className="btn sm" href="/programe/nou">
+            <Icon name="plus" width={2.2} />
+            Nou
+          </Link>
+        }
+      />
+      <div className="egrid">
+        {events.map((e) => (
+          <EventCard key={e.id} event={e} />
+        ))}
+      </div>
+    </>
+  );
+}
