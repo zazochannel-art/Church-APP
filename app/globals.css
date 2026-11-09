@@ -95,7 +95,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
 .chip[aria-pressed="true"]{background:#fff;color:var(--indigo);border-color:#fff}
 
 /* members */
-input[type=text],input[type=date],input[type=number],textarea,select{font:400 15px var(--font);width:100%;border:1px solid var(--stroke);background:rgba(255,255,255,.12);color:var(--ink);border-radius:16px;padding:12px 15px}
+input[type=text],input[type=date],input[type=time],input[type=number],textarea,select{font:400 15px var(--font);width:100%;border:1px solid var(--stroke);background:rgba(255,255,255,.12);color:var(--ink);border-radius:16px;padding:12px 15px}
 select option{color:#1d1b3a}
 textarea{resize:vertical;min-height:110px;line-height:1.45}
 input::placeholder,textarea::placeholder{color:var(--dim)}
@@ -229,3 +229,17 @@ nav.tabs{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-in
 a.tab,a.link,a.btn{text-decoration:none}
 a.link{text-decoration:underline}
 .ecard{display:flex}
+
+/* adding items inline */
+.addrow{display:flex;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--sep)}
+.addrow input{padding:9px 13px;font-size:14px}
+.addrow .btn{flex:none}
+.addform{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid var(--sep)}
+.addform input,.addform select{padding:9px 13px;font-size:14px}
+.addform .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.task.addtask{color:var(--soft)}
+.task.addtask .box svg{opacity:1}
+.iconx{flex:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--stroke);background:transparent;color:var(--soft);display:grid;place-items:center;cursor:pointer;font:inherit}
+.iconx svg{width:13px;height:13px}
+button.status{border:0;font-family:inherit;cursor:pointer}
+.step:has(.iconx){grid-template-columns:52px 1fr auto auto}

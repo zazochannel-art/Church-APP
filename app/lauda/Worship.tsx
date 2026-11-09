@@ -1,17 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Avatar, firstName } from "@/components/Avatar";
 import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/Toast";
+import { addSong, saveSetlist } from "@/lib/actions";
 import type { Song } from "@/lib/types";
 
 export function Worship({ library, initialSet, band }: { library: Song[]; initialSet: string[]; band: string[] }) {
   const toast = useToast();
-  const [set, setSet] = useState(initialSet);
+  const [set, setSetState] = useState(initialSet);
+  const [, start] = useTransition();
+  const [adding, setAdding] = useState(false);
+  const setSet = (f: (s: string[]) => string[]) => {
+    const next = f(set);
+    setSetState(next);
+    start(() => saveSetlist(next));
+  };
   const [query, setQuery] = useState("");
   const [playing, setPlaying] = useState(false);
-  const byId = (id: string) => library.find((s) => s.id === id)!;
+  const byId = (id: string) => library.find((s) => s.id === id);
   const found = library.filter((s) => s.title.toLowerCase().includes(query.toLowerCase()));
   const add = (id: string) => {
     setSet((s) => [...s, id]);
@@ -38,7 +46,7 @@ export function Worship({ library, initialSet, band }: { library: Song[]; initia
               aria-label={playing ? "Pauză" : "Ascultă"}
               onClick={() => {
                 setPlaying((p) => !p);
-                if (!playing && set[0]) toast(`Se redă: ${byId(set[0]).title}`);
+                if (!playing && set[0]) toast(`Se redă: ${byId(set[0])?.title ?? ""}`);
               }}
             >
               <Icon name={playing ? "pause" : "play"} />
@@ -48,6 +56,7 @@ export function Worship({ library, initialSet, band }: { library: Song[]; initia
             {set.length === 0 && <div className="song meta" style={{ gridTemplateColumns: "1fr" }}>Adăugați cântări din bibliotecă.</div>}
             {set.map((id, i) => {
               const s = byId(id);
+              if (!s) return null;
               return (
                 <div className="song" key={id}>
                   <span className="n">{i + 1}</span>
@@ -90,8 +99,42 @@ export function Worship({ library, initialSet, band }: { library: Song[]; initia
       <div className="colB">
         <section>
           <h2>
-            Biblioteca de cântări <span className="meta num">{library.length}</span>
+            Biblioteca de cântări{" "}
+            <button className="link" type="button" onClick={() => setAdding((a) => !a)}>
+              {adding ? "Închide" : "Cântare nouă"}
+            </button>
           </h2>
+          {adding && (
+            <form
+              className="gl panel addform"
+              style={{ borderTop: 0 }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                const f = new FormData(e.currentTarget);
+                const song = { title: String(f.get("title") ?? ""), author: String(f.get("author") ?? ""), key: String(f.get("key") ?? ""), bpm: Number(f.get("bpm")) };
+                if (!song.title.trim()) return;
+                start(async () => {
+                  await addSong(song);
+                  setAdding(false);
+                  toast(`„${song.title.trim()}” a intrat în bibliotecă`);
+                });
+              }}
+            >
+              <input name="title" type="text" placeholder="Titlul" aria-label="Titlul cântării" autoFocus required />
+              <input name="author" type="text" placeholder="Autor sau sursă" aria-label="Autor" />
+              <div className="two">
+                <select name="key" aria-label="Tonalitate" defaultValue="G">
+                  {["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"].map((k) => (
+                    <option key={k}>{k}</option>
+                  ))}
+                </select>
+                <input name="bpm" type="number" min={30} max={240} placeholder="BPM" aria-label="BPM" />
+              </div>
+              <div className="row" style={{ justifyContent: "flex-end" }}>
+                <button className="btn sm" type="submit">Salvează</button>
+              </div>
+            </form>
+          )}
           <div className="search">
             <Icon name="search" />
             <input type="text" placeholder="Caută o cântare" aria-label="Caută o cântare" value={query} onChange={(e) => setQuery(e.target.value)} />

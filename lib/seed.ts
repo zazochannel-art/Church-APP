@@ -1,5 +1,4 @@
-// Sample data so the app can be explored before the database is connected.
-// Everything here is example content, not real people.
+// Example content the database is filled with on first start. Not real people.
 import type { Message, Person, ServingWeek, Song, Task, Volunteer, YouthEvent } from "./types";
 
 export const churchName = "Biserica Harul";
@@ -144,7 +143,3 @@ export const messages: Message[] = [
   { id: "m2", audience: "Tabăra de iarnă", text: "Mai sunt 3 locuri. Plata se face până pe 1 decembrie, la Ioana.", when: "ieri", recipients: 47, read: 29 },
 ];
 
-export const songById = (id: string) => songs.find((s) => s.id === id);
-export const eventById = (id: string) => events.find((e) => e.id === id);
-export const openSlots = (week: ServingWeek) => week.teams.flatMap((t) => t.slots.filter((s) => !s.person).map((s) => `${t.name} · ${s.role}`));
-export const birthdaysThisWeek = () => people.filter((p) => /^1[0-6] nov$/.test(p.birthday));

@@ -1,27 +1,36 @@
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { EventCard, RunSheet } from "@/components/Bits";
-import { Checklist } from "@/components/Checklist";
 import { Icon } from "@/components/Icon";
 import { ToastButton } from "@/components/ToastButton";
-import { birthdaysThisWeek, currentLeader, events, fridaySetlist, openSlots, serving, songById, tasks } from "@/lib/data";
+import { birthdaysSoon, getChurch, getEvents, getPeople, getSetlist, getSongs, getTasks, getWeeks, openSlots } from "@/lib/store";
+import { TaskList } from "./TaskList";
 
-export default function Dashboard() {
+const DAYS = ["Duminică", "Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă"];
+const MONTHS = ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"];
+
+export default async function Dashboard() {
+  const [{ leader }, events, weeks, tasks, songs, setIds, people] = await Promise.all([
+    getChurch(), getEvents(), getWeeks(), getTasks(), getSongs(), getSetlist(), getPeople(),
+  ]);
   const friday = events[0];
-  const free = openSlots(serving[0]);
+  const bigOne = events.find((e) => e !== friday && e.price) ?? events[1];
+  const free = weeks[0] ? openSlots(weeks[0]) : [];
   const todo = tasks.filter((t) => !t.done).length;
-  const setlist = fridaySetlist.map(songById).filter((s) => s !== undefined);
-  const [first, ...rest] = currentLeader.name.split(" ");
+  const setlist = setIds.map((id) => songs.find((s) => s.id === id)).filter((s) => s !== undefined);
+  const [first, ...rest] = leader.name.split(" ");
+  const now = new Date();
+  const birthdays = birthdaysSoon(people, now);
 
   return (
     <>
       <header>
         <div className="hi">
-          <span className="eyebrow">Duminică, 9 noiembrie</span>
+          <span className="eyebrow">{DAYS[now.getDay()]}, {now.getDate()} {MONTHS[now.getMonth()]}</span>
           <h1>
             Bună, <em>{first}</em>
           </h1>
-          <span className="role-tag" title={rest.join(" ")}>{currentLeader.role}</span>
+          <span className="role-tag" title={rest.join(" ")}>{leader.role}</span>
         </div>
         <div className="hdr-actions">
           <button className="iconbtn gl" type="button" aria-label="Notificări">
@@ -32,7 +41,7 @@ export default function Dashboard() {
       </header>
 
       <div className="stats">
-        <div className="gl stat"><b>{friday.going}</b><span>înscriși vineri</span></div>
+        <div className="gl stat"><b>{friday?.going ?? 0}</b><span>înscriși vineri</span></div>
         <div className="gl stat"><b>{setlist.length}</b><span>cântări pe lista de vineri</span></div>
         <div className={`gl stat ${free.length ? "alert" : ""}`}><b>{free.length}</b><span>posturi libere vineri</span></div>
         <div className="gl stat"><b>{todo}</b><span>sarcini de făcut</span></div>
@@ -40,17 +49,21 @@ export default function Dashboard() {
 
       <div className="cols">
         <div className="colA">
-          <section>
-            <h2>
-              Programul de vineri <Link className="link" href={`/programe/${friday.id}`}>Deschide</Link>
-            </h2>
-            <RunSheet event={friday} />
-          </section>
-          <Checklist showCount="De făcut" items={tasks.map((t) => ({ id: t.id, text: t.text, done: t.done, due: t.due, soon: t.soon, owner: t.owner }))} />
-          <section>
-            <h2>Următorul eveniment mare</h2>
-            <EventCard event={events[1]} />
-          </section>
+          {friday && (
+            <section>
+              <h2>
+                Programul de vineri <Link className="link" href={`/programe/${friday.id}`}>Deschide</Link>
+              </h2>
+              <RunSheet event={friday} />
+            </section>
+          )}
+          <TaskList tasks={tasks} people={people.filter((p) => p.group !== "Adolescenți").map((p) => p.name)} />
+          {bigOne && (
+            <section>
+              <h2>Următorul eveniment mare</h2>
+              <EventCard event={bigOne} />
+            </section>
+          )}
         </div>
 
         <div className="colB">
@@ -86,9 +99,10 @@ export default function Dashboard() {
           )}
 
           <section>
-            <h2>Zile de naștere săptămâna asta</h2>
+            <h2>Zile de naștere în următoarele 7 zile</h2>
             <div className="gl mlist">
-              {birthdaysThisWeek().map((p) => (
+              {birthdays.length === 0 && <div className="meta" style={{ padding: "14px 0" }}>Nicio zi de naștere în următoarele 7 zile.</div>}
+              {birthdays.map((p) => (
                 <div className="mrow" key={p.id} style={{ cursor: "default" }}>
                   <Avatar name={p.name} />
                   <div className="grow">
