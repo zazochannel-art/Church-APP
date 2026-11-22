@@ -1,15 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { COOKIE, same, tokenFor } from "./lib/auth";
 
 // The app holds phone numbers and notes about young people, so it is closed
 // with one shared password (ADUNARE_PAROLA). Locally it stays open if no
 // password is set; in production it refuses to run without one.
-function same(a: string, b: string) {
-  let diff = a.length ^ b.length;
-  for (let i = 0; i < Math.max(a.length, b.length); i++) diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
-  return diff === 0;
-}
+const PUBLIC = ["/intrare", "/api/sanatate"];
 
-export function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
+  const { pathname, search } = req.nextUrl;
+  if (PUBLIC.some((p) => pathname === p)) return NextResponse.next();
   const password = process.env.ADUNARE_PAROLA;
   if (!password) {
     if (process.env.NODE_ENV === "production") {
@@ -17,16 +16,12 @@ export function proxy(req: NextRequest) {
     }
     return NextResponse.next();
   }
-  const auth = req.headers.get("authorization") ?? "";
-  if (auth.startsWith("Basic ")) {
-    const decoded = atob(auth.slice(6));
-    const given = decoded.slice(decoded.indexOf(":") + 1);
-    if (same(given, password)) return NextResponse.next();
-  }
-  return new NextResponse("Parolă necesară", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="Adunare", charset="UTF-8"' },
-  });
+  const cookie = req.cookies.get(COOKIE)?.value ?? "";
+  if (cookie && same(cookie, await tokenFor(password))) return NextResponse.next();
+  const url = req.nextUrl.clone();
+  url.pathname = "/intrare";
+  url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
+  return NextResponse.redirect(url);
 }
 
 export const config = {

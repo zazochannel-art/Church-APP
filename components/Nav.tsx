@@ -11,9 +11,11 @@ const tabs: { href: string; label: string; icon: IconName }[] = [
   { href: "/echipa", label: "Echipă", icon: "people" },
   { href: "/mesaje", label: "Mesaje", icon: "msg" },
 ];
+const extra: { href: string; label: string; icon: IconName } = { href: "/setari", label: "Setări", icon: "gear" };
 
 export function Nav({ churchName }: { churchName: string }) {
   const path = usePathname();
+  if (path === "/intrare") return null;
   const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   return (
     <nav className="tabs" aria-label="Meniu">
@@ -27,6 +29,10 @@ export function Nav({ churchName }: { churchName: string }) {
           {t.label}
         </Link>
       ))}
+      <Link href={extra.href} className="tab desk" aria-current={isActive(extra.href) ? "page" : undefined}>
+        <Icon name={extra.icon} />
+        {extra.label}
+      </Link>
     </nav>
   );
 }

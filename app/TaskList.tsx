@@ -4,47 +4,76 @@ import { useState, useTransition } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/Toast";
-import { addTask, toggleTask } from "@/lib/actions";
+import { addTask, clearDoneTasks, deleteTask, toggleTask } from "@/lib/actions";
 import type { Task } from "@/lib/types";
 
-export function TaskList({ tasks, people }: { tasks: Task[]; people: string[] }) {
+export function TaskList({ tasks, people, me }: { tasks: Task[]; people: string[]; me: string }) {
   const toast = useToast();
   const [list, setList] = useState(tasks);
   const [adding, setAdding] = useState(false);
   const [, start] = useTransition();
   const left = list.filter((t) => !t.done).length;
+  const done = list.length - left;
+  const owners = me && !people.includes(me) ? [me, ...people] : people;
 
   return (
-    <section>
+    <section id="de-facut">
       <h2>
-        De făcut <span className="meta num">{left} rămase</span>
-      </h2>
-      <div className="gl tasks">
-        {list.map((t) => (
+        <span>De făcut <span className="meta num">· {left} rămase</span></span>
+        {done > 0 && (
           <button
-            key={t.id}
+            className="link"
             type="button"
-            className={`task ${t.done ? "done" : ""}`}
-            aria-pressed={t.done}
             onClick={() => {
-              setList((l) => l.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)));
-              start(() => toggleTask(t.id));
+              setList((l) => l.filter((t) => !t.done));
+              start(() => clearDoneTasks());
             }}
           >
-            <span className="box">
-              <Icon name="check" width={2.6} />
-            </span>
-            <span className="grow">
-              <span className="tt">{t.text}</span>
-              {t.due && (
-                <>
-                  <br />
-                  <span className={`due ${t.soon && !t.done ? "soon" : ""}`}>{t.due}</span>
-                </>
-              )}
-            </span>
-            {t.owner && <Avatar name={t.owner} className="who" />}
+            Șterge cele bifate
           </button>
+        )}
+      </h2>
+      <div className="gl tasks">
+        {list.length === 0 && !adding && <div className="meta" style={{ padding: "12px 0" }}>Nicio sarcină. Bine lucrat!</div>}
+        {list.map((t) => (
+          <div key={t.id} className={`task ${t.done ? "done" : ""}`}>
+            <button
+              type="button"
+              className="tasktoggle"
+              aria-pressed={t.done}
+              onClick={() => {
+                setList((l) => l.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)));
+                start(() => toggleTask(t.id));
+              }}
+            >
+              <span className="box">
+                <Icon name="check" width={2.6} />
+              </span>
+              <span className="grow">
+                <span className="tt">{t.text}</span>
+                {(t.due || t.owner) && (
+                  <>
+                    <br />
+                    <span className={`due ${t.soon && !t.done ? "soon" : ""}`}>
+                      {[t.due, t.owner && t.owner.split(" ")[0]].filter(Boolean).join(" · ")}
+                    </span>
+                  </>
+                )}
+              </span>
+              {t.owner && <Avatar name={t.owner} className="who" />}
+            </button>
+            <button
+              className="iconx"
+              type="button"
+              aria-label={`Șterge „${t.text}”`}
+              onClick={() => {
+                setList((l) => l.filter((x) => x.id !== t.id));
+                start(() => deleteTask(t.id));
+              }}
+            >
+              <Icon name="trash" width={2} />
+            </button>
+          </div>
         ))}
         {adding ? (
           <form
@@ -56,19 +85,24 @@ export function TaskList({ tasks, people }: { tasks: Task[]; people: string[] })
               if (!text) return;
               const owner = String(f.get("owner") ?? "");
               const due = String(f.get("due") ?? "").trim();
-              setList((l) => [...l, { id: `new-${l.length}`, text, owner, due, done: false }]);
               setAdding(false);
-              start(() => addTask(text, owner, due));
-              toast("Sarcină adăugată");
+              start(async () => {
+                const task = await addTask(text, owner, due);
+                if (task) setList((l) => [...l, task]);
+                toast("Sarcină adăugată");
+              });
             }}
           >
-            <input name="text" type="text" placeholder="Ce trebuie făcut?" aria-label="Ce trebuie făcut" autoFocus required />
-            <select name="owner" aria-label="Cine se ocupă">
-              {people.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
-            <input name="due" type="text" placeholder="Până când (ex. vineri)" aria-label="Până când" />
+            <input name="text" type="text" placeholder="Ce trebuie făcut?" aria-label="Ce trebuie făcut" autoFocus required maxLength={120} />
+            <div className="two">
+              <select name="owner" aria-label="Cine se ocupă" defaultValue={me || owners[0]}>
+                <option value="">Nimeni anume</option>
+                {owners.map((p) => (
+                  <option key={p}>{p}</option>
+                ))}
+              </select>
+              <input name="due" type="text" placeholder="Până când (ex. vineri)" aria-label="Până când" maxLength={40} />
+            </div>
             <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
               <button className="btn ghost sm" type="button" onClick={() => setAdding(false)}>Renunță</button>
               <button className="btn sm" type="submit">Salvează</button>

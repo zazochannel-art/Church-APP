@@ -243,3 +243,48 @@ a.link{text-decoration:underline}
 .iconx svg{width:13px;height:13px}
 button.status{border:0;font-family:inherit;cursor:pointer}
 .step:has(.iconx){grid-template-columns:52px 1fr auto auto}
+
+/* --- v3: editing everywhere, login, settings --- */
+a.stat{color:inherit;text-decoration:none}
+.tab.desk{display:none}
+@media (min-width:900px){.tab.desk{display:flex;margin-top:auto}.iconbtn.mob{display:none}}
+a.iconbtn{text-decoration:none}
+div.task{cursor:default;align-items:center}
+.tasktoggle{display:flex;gap:12px;align-items:flex-start;flex:1;min-width:0;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:0}
+.tasktoggle .grow{flex:1;min-width:0}
+.tasktoggle:focus-visible{outline:2px solid #fff;outline-offset:3px;border-radius:8px}
+.iconx:disabled{opacity:.3;cursor:default}
+.stepacts{display:flex;gap:4px;align-items:center}
+.step:has(.stepacts){grid-template-columns:52px 1fr auto}
+.step:has(.stepacts) .stepacts{grid-column:2/-1;justify-content:flex-end;margin-top:-4px}
+@media (min-width:900px){.step:has(.stepacts){grid-template-columns:52px 1fr auto auto}.step:has(.stepacts) .stepacts{grid-column:auto;margin-top:0}}
+.btn.danger{background:rgba(255,179,179,.22);color:var(--bad);border:1px solid rgba(255,179,179,.5);box-shadow:none}
+.empty{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hint{font-size:11.5px;color:var(--dim)}
+.formerror{margin:0;color:var(--bad);font-size:13.5px}
+.past{opacity:.75}
+.addform label.f{font-size:11.5px}
+.gl.panel.addform{border-top:1px solid var(--stroke);padding:14px}
+input[type=url],input[type=tel],input[type=password],input[type=file]{font:400 15px var(--font);width:100%;border:1px solid var(--stroke);background:rgba(255,255,255,.12);color:var(--ink);border-radius:16px;padding:12px 15px}
+input[type=file]{width:auto;max-width:100%;padding:8px 12px;font-size:13px}
+.addform input[type=url],.addform input[type=tel]{padding:9px 13px;font-size:14px}
+.addform textarea{font-size:14px;padding:10px 13px}
+.ghostkey{background:rgba(255,255,255,.18)!important;color:#fff!important}
+.play.off{opacity:.4;cursor:default}
+a.play{text-decoration:none}
+.avail.pick{gap:6px}
+.avail.pick button{width:34px;height:34px;border-radius:10px;border:1px solid var(--stroke);background:rgba(255,255,255,.12);color:var(--soft);font:600 12px var(--font);cursor:pointer;padding:0}
+.avail.pick button.y{background:var(--ok);border-color:var(--ok);color:var(--indigo)}
+.newweek{justify-content:flex-start;gap:8px}
+.newweek input{width:auto;padding:8px 12px;font-size:14px;border-radius:12px}
+.team .link{font-size:12.5px}
+.search.grow{flex:1;min-width:0}
+.restore{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--sep);padding-top:12px}
+.login{min-height:100%;display:grid;place-items:center;padding:24px 0}
+.loginbox{width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px;padding:26px 22px;margin:auto}
+.brandmark b{display:block;font-weight:600;font-size:30px;letter-spacing:-.03em}
+.brandmark span{font-size:13px;color:var(--soft)}
+.loginbox p{margin:0}
+.loginform{display:flex;flex-direction:column;gap:12px}
+.loginform .btn{margin-top:4px}
+.wrapchips .chip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
