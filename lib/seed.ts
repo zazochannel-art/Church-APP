@@ -1,8 +1,22 @@
 // Example content the database is filled with on first start. Not real people.
-import type { Message, Person, ServingWeek, Song, Task, Volunteer, YouthEvent } from "./types";
+import { addDays, iso, MONTHS_SHORT, nextWeekday, parse, whenText } from "./dates";
+import type { Message, Person, Rehearsal, ServingWeek, Song, Task, Volunteer, YouthEvent } from "./types";
+
+// Example dates are placed relative to the first start, so the demo always
+// shows an upcoming Friday, a camp at the end of the year and a tournament.
+const friday = iso(nextWeekday(5));
+const camp = (() => {
+  const y = new Date().getFullYear();
+  const d = `${y}-12-28`;
+  return d >= friday ? d : `${y + 1}-12-28`;
+})();
+const tournament = iso(nextWeekday(6, parse(addDays(camp, 14))));
+const at = (date: string, time?: string, endDate?: string) => {
+  const d = parse(date);
+  return { date, time, endDate, day: String(d.getDate()), month: MONTHS_SHORT[d.getMonth()], when: whenText(date, time, endDate) };
+};
 
 export const churchName = "Biserica Harul";
-export const currentLeader = { name: "Mihai Dobre", role: "Lider tineret" };
 
 export const people: Person[] = [
   { id: "p1", name: "Ana Munteanu", group: "Adolescenți", age: 16, phone: "0721 334 120", birthday: "12 nov", note: "Cântă la pian. Vrea să slujească în laudă." },
@@ -29,9 +43,9 @@ export const volunteers: Volunteer[] = [
 ];
 
 export const songs: Song[] = [
-  { id: "s1", title: "Ești bun", author: "Laudă tineret", key: "G", bpm: 72 },
+  { id: "s1", title: "Ești bun", author: "Laudă tineret", key: "G", bpm: 72, link: "https://www.youtube.com/results?search_query=E%C8%99ti+bun+cantare" },
   { id: "s2", title: "Mare e credincioșia Ta", author: "Imn", key: "D", bpm: 68 },
-  { id: "s3", title: "Isus, Numele Tău", author: "Laudă tineret", key: "A", bpm: 126 },
+  { id: "s3", title: "Isus, Numele Tău", author: "Laudă tineret", key: "A", bpm: 126, link: "https://www.youtube.com/results?search_query=Isus+Numele+T%C4%83u" },
   { id: "s4", title: "Harul Tău mă ține", author: "Laudă tineret", key: "E", bpm: 76 },
   { id: "s5", title: "Doamne, Tu ești tot ce am", author: "Laudă tineret", key: "C", bpm: 70 },
   { id: "s6", title: "Biruitor e Mielul", author: "Laudă tineret", key: "B", bpm: 132 },
@@ -49,11 +63,10 @@ export const tasks: Task[] = [
   { id: "t4", text: "Cumpără gustări pentru seara de tineret", due: "vineri", owner: "Ruth Andrei", done: true },
 ];
 
-export const events: YouthEvent[] = [
+export const events: YouthEvent[] = ([
   {
-    id: "seara-de-tineret", day: "14", month: "noi", name: "Seara de tineret: Credința în săptămâna de luni",
-    when: "Vineri, 19:00", where: "Sala mare", going: 43, capacity: null, organizer: "Mihai Dobre",
-    flags: [{ text: "2 posturi de slujire libere", tone: "warn" }],
+    id: "seara-de-tineret", ...at(friday, "19:00"), name: "Seara de tineret: Credința în săptămâna de luni",
+    where: "Sala mare", capacity: null, organizer: "Mihai Dobre",
     signups: ["Ana Munteanu", "Beni Rusu", "Cristi Lungu", "Eliza Toma", "Filip Grigore", "Sara Ilie"].map((name) => ({ name })),
     run: [
       { start: "19:00", minutes: 10, kind: "altele", title: "Bun venit și anunțuri", lead: "Ioana Petrescu" },
@@ -71,9 +84,8 @@ export const events: YouthEvent[] = [
     ],
   },
   {
-    id: "tabara-de-iarna", day: "28", month: "dec", name: "Tabăra de iarnă la Vatra Dornei",
-    when: "28 – 31 decembrie", where: "Cabana Izvorul", going: 47, capacity: 50, organizer: "Ioana Petrescu", price: "650 lei",
-    flags: [{ text: "9 plăți restante", tone: "warn" }, { text: "Cabana confirmată", tone: "ok" }],
+    id: "tabara-de-iarna", ...at(camp, "08:00", addDays(camp, 3)), name: "Tabăra de iarnă la Vatra Dornei",
+    where: "Cabana Izvorul", capacity: 50, organizer: "Ioana Petrescu", price: "650 lei",
     signups: [
       { name: "Ana Munteanu", paid: true }, { name: "David Ciobanu", paid: false }, { name: "Eliza Toma", paid: true },
       { name: "Filip Grigore", paid: false }, { name: "Paul Neagu", paid: true }, { name: "Sara Ilie", paid: true }, { name: "Timotei Vasile", paid: true },
@@ -93,9 +105,8 @@ export const events: YouthEvent[] = [
     ],
   },
   {
-    id: "turneu-fotbal", day: "10", month: "ian", name: "Turneu de fotbal între biserici",
-    when: "Sâmbătă, 10:00", where: "Baza sportivă Nord", going: 18, capacity: 24, organizer: "Cristi Lungu",
-    flags: [{ text: "Teren rezervat", tone: "ok" }],
+    id: "turneu-fotbal", ...at(tournament, "10:00"), name: "Turneu de fotbal între biserici",
+    where: "Baza sportivă Nord", capacity: 24, organizer: "Cristi Lungu",
     signups: ["Beni Rusu", "Cristi Lungu", "Filip Grigore", "Marcu Stan", "Paul Neagu"].map((name) => ({ name })),
     run: [
       { start: "10:00", minutes: 15, kind: "altele", title: "Încălzire și rugăciune", lead: "Cristi Lungu" },
@@ -108,11 +119,11 @@ export const events: YouthEvent[] = [
       { text: "Tricouri", done: false },
     ],
   },
-];
+] as Omit<YouthEvent, "going">[]).map((e) => ({ ...e, going: e.signups.length }));
 
 export const serving: ServingWeek[] = [
   {
-    label: "Vineri, 14 nov",
+    label: whenText(friday), date: friday,
     teams: [
       { name: "Laudă", slots: [
         { role: "Voce", person: "Eliza Toma", status: "confirmat" }, { role: "Pian", person: "Sara Ilie", status: "confirmat" },
@@ -122,7 +133,7 @@ export const serving: ServingWeek[] = [
     ],
   },
   {
-    label: "Vineri, 21 nov",
+    label: whenText(addDays(friday, 7)), date: addDays(friday, 7),
     teams: [
       { name: "Laudă", slots: [
         { role: "Voce", person: "Ana Munteanu", status: "asteapta" }, { role: "Pian", person: null },
@@ -133,13 +144,10 @@ export const serving: ServingWeek[] = [
   },
 ];
 
-export const audiences: { name: string; count: number }[] = [
-  { name: "Toți tinerii", count: 55 }, { name: "Adolescenți", count: 24 }, { name: "Tineri 18–30", count: 31 },
-  { name: "Lideri", count: 6 }, { name: "Trupa de laudă", count: 9 }, { name: "Voluntari", count: 14 }, { name: "Tabăra de iarnă", count: 47 },
-];
+export const rehearsal: Rehearsal = { when: "Vineri, 17:30", where: "Capela" };
 
 export const messages: Message[] = [
-  { id: "m1", audience: "Toți tinerii", text: "Vinerea aceasta ne întâlnim în Sala mare, nu în Capelă. Vă așteptăm la 19:00!", when: "acum 3 zile", recipients: 55, read: 41 },
-  { id: "m2", audience: "Tabăra de iarnă", text: "Mai sunt 3 locuri. Plata se face până pe 1 decembrie, la Ioana.", when: "ieri", recipients: 47, read: 29 },
+  { id: "m1", audience: "Toți tinerii", text: "Vinerea aceasta ne întâlnim în Sala mare, nu în Capelă. Vă așteptăm la 19:00!", when: new Date(Date.now() - 3 * 864e5).toISOString(), recipients: 12, author: "Mihai Dobre" },
+  { id: "m2", audience: "Înscriși · Tabăra de iarnă la Vatra Dornei", text: "Mai sunt 3 locuri. Plata se face până pe 1 decembrie, la Ioana.", when: new Date(Date.now() - 864e5).toISOString(), recipients: 7, author: "Ioana Petrescu" },
 ];
 

@@ -15,7 +15,6 @@ type Kinds = {
   task: import("./types").Task;
   event: import("./types").YouthEvent;
   week: import("./types").ServingWeek;
-  audience: import("./types").Audience;
   message: import("./types").Message;
   setting: { value: unknown };
 };
@@ -44,22 +43,22 @@ function open() {
   return db;
 }
 
-function fill(db: DatabaseSync) {
+function fill(db: DatabaseSync, examples = process.env.ADUNARE_FARA_EXEMPLE !== "1") {
   const put = db.prepare("insert into records (kind, id, position, data) values (?, ?, ?, ?)");
+  db.exec("begin");
+  put.run("setting", "church", 0, JSON.stringify({ value: seed.churchName }));
+  put.run("setting", "rehearsal", 0, JSON.stringify({ value: seed.rehearsal }));
+  put.run("setting", "setlist", 0, JSON.stringify({ value: examples ? seed.fridaySetlist : [] }));
+  if (!examples) return void db.exec("commit");
   const many = <K extends Kind>(kind: K, items: Kinds[K][], id: (x: Kinds[K], i: number) => string) =>
     items.forEach((x, i) => put.run(kind, id(x, i), i, JSON.stringify(x)));
-  db.exec("begin");
   many("person", seed.people, (x) => x.id);
   many("volunteer", seed.volunteers, (x) => x.id);
   many("song", seed.songs, (x) => x.id);
   many("task", seed.tasks, (x) => x.id);
   many("event", seed.events, (x) => x.id);
   many("week", seed.serving, (_, i) => `w${i + 1}`);
-  many("audience", seed.audiences, (x) => x.name);
   many("message", seed.messages, (x) => x.id);
-  put.run("setting", "setlist", 0, JSON.stringify({ value: seed.fridaySetlist }));
-  put.run("setting", "church", 0, JSON.stringify({ value: seed.churchName }));
-  put.run("setting", "leader", 0, JSON.stringify({ value: seed.currentLeader }));
   db.exec("commit");
 }
 
@@ -91,4 +90,57 @@ export function setting<T>(id: string): T {
 
 export function setSetting(id: string, value: unknown) {
   put("setting", id, { value });
+}
+
+export function remove(kind: Kind, id: string) {
+  open().prepare("delete from records where kind = ? and id = ?").run(kind, id);
+}
+
+/** Swap a record with its neighbour (dir -1 = up, 1 = down). */
+export function move(kind: Kind, id: string, dir: -1 | 1) {
+  const ids = list(kind).map((r) => r._id);
+  const i = ids.indexOf(id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= ids.length) return;
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  const db = open();
+  const set = db.prepare("update records set position = ? where kind = ? and id = ?");
+  db.exec("begin");
+  ids.forEach((x, p) => set.run(p, kind, x));
+  db.exec("commit");
+}
+
+/** Everything, for the backup download. */
+export function dump() {
+  return open().prepare("select kind, id, position, data, updated_at from records order by kind, position, rowid").all() as {
+    kind: string; id: string; position: number; data: string; updated_at: string;
+  }[];
+}
+
+/** Replace all data with a backup made by dump(). */
+export function restore(rows: { kind: string; id: string; position: number; data: string }[]) {
+  const db = open();
+  const ins = db.prepare("insert into records (kind, id, position, data) values (?, ?, ?, ?)");
+  db.exec("begin");
+  try {
+    db.exec("delete from records");
+    for (const r of rows) ins.run(String(r.kind), String(r.id), Number(r.position) || 0, typeof r.data === "string" ? r.data : JSON.stringify(r.data));
+    db.exec("commit");
+  } catch (e) {
+    db.exec("rollback");
+    throw e;
+  }
+}
+
+/** Delete people, programs, songs… but keep the settings (church name, rehearsal). */
+export function clearData() {
+  const db = open();
+  db.exec("begin");
+  db.exec("delete from records where kind <> 'setting'");
+  db.prepare("update records set data = ? where kind = 'setting' and id = 'setlist'").run(JSON.stringify({ value: [] }));
+  db.exec("commit");
+}
+
+export function ping() {
+  return (open().prepare("select count(*) as n from records").get() as { n: number }).n;
 }

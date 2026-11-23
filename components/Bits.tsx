@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Icon } from "./Icon";
 import type { ReactNode } from "react";
-import type { RunKind, YouthEvent } from "@/lib/types";
+import type { Flag, RunKind, YouthEvent } from "@/lib/types";
 import { Avatar, firstName } from "./Avatar";
 
 export function PageHeader({ eyebrow, title, actions }: { eyebrow: string; title: ReactNode; actions?: ReactNode }) {
@@ -23,7 +22,7 @@ export const KIND: Record<RunKind, { label: string; color: string }> = {
   altele: { label: "Altele", color: "#b3a8ff" },
 };
 
-export function RunSheet({ event, onRemove }: { event: YouthEvent; onRemove?: (index: number) => void }) {
+export function RunSheet({ event, actions }: { event: YouthEvent; actions?: (index: number) => ReactNode }) {
   if (!event.run.length) return <div className="gl panel meta">Încă nu ați adăugat ordinea programului.</div>;
   const total = event.run.reduce((a, r) => a + r.minutes, 0);
   return (
@@ -56,14 +55,10 @@ export function RunSheet({ event, onRemove }: { event: YouthEvent; onRemove?: (i
               <b>{r.title}</b>
             </div>
             <span className="resp">
-              <Avatar name={r.lead} />
-              {firstName(r.lead)}
+              {r.lead && <Avatar name={r.lead} />}
+              {r.lead ? firstName(r.lead) : ""}
             </span>
-            {onRemove && (
-              <button className="iconx" type="button" aria-label={`Scoate „${r.title}”`} onClick={() => onRemove(i)}>
-                <Icon name="minus" width={2.4} />
-              </button>
-            )}
+            {actions && <div className="stepacts">{actions(i)}</div>}
           </div>
         ))}
       </div>
@@ -71,8 +66,9 @@ export function RunSheet({ event, onRemove }: { event: YouthEvent; onRemove?: (i
   );
 }
 
-export function EventCard({ event: e }: { event: YouthEvent }) {
-  const pct = e.capacity ? Math.min(100, (e.going / e.capacity) * 100) : null;
+export function EventCard({ event: e, flags = [] }: { event: YouthEvent; flags?: Flag[] }) {
+  const going = e.signups.length;
+  const pct = e.capacity ? Math.min(100, (going / e.capacity) * 100) : null;
   return (
     <Link href={`/programe/${e.id}`} className="gl ecard">
       <div className="ehead">
@@ -89,10 +85,10 @@ export function EventCard({ event: e }: { event: YouthEvent }) {
       </div>
       <div className="row">
         <span className="meta num">
-          {e.going}
+          {going}
           {e.capacity ? ` / ${e.capacity} locuri` : " înscriși"}
         </span>
-        <span className="meta">Organizator: {firstName(e.organizer)}</span>
+        {e.organizer && <span className="meta">Organizator: {firstName(e.organizer)}</span>}
       </div>
       {pct !== null && (
         <div className={`track ${pct > 90 ? "warn" : ""}`}>
@@ -100,7 +96,7 @@ export function EventCard({ event: e }: { event: YouthEvent }) {
         </div>
       )}
       <div className="flags">
-        {e.flags.map((f) => (
+        {flags.map((f) => (
           <span key={f.text} className={`flag ${f.tone}`}>
             {f.text}
           </span>

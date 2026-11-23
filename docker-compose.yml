@@ -1,0 +1,13 @@
+# For a VPS: `docker compose up -d --build`. Put the password in a .env file next to this one.
+services:
+  adunare:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      ADUNARE_PAROLA: ${ADUNARE_PAROLA:?Setează ADUNARE_PAROLA în fișierul .env}
+    volumes:
+      - adunare-date:/data
+volumes:
+  adunare-date:

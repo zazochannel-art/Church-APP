@@ -6,13 +6,14 @@ Aplicație pentru liderii și organizatorii de tineret din bisericile baptiste: 
 
 | Secțiune | Ce poți face |
 |---|---|
-| **Panou** | Programul de vineri minut cu minut, de făcut, cântările, locuri libere în slujire, zile de naștere |
-| **Programe** | Evenimente, program pe momente, înscrieri și plăți, listă de pregătire, eveniment nou |
-| **Laudă** | Lista de cântări cu tonalitate și BPM, bibliotecă, playlist, repetiție, trimite lista trupei |
-| **Echipă** | Slujire pe săptămâni (alegi cine slujește), voluntari cu disponibilitate, lista tinerilor cu notițe |
-| **Mesaje** | Alegi cui trimiți, scrii anunțul, vezi cine l-a citit |
+| **Panou** | Următorul program minut cu minut, sarcini (adaugi, bifezi, ștergi), cântările, posturi libere, zile de naștere cu felicitare pe WhatsApp |
+| **Programe** | Programe noi (și de mai multe zile), modifici sau ștergi, pornești de la un program existent, momente pe care le muți, modifici și ștergi, înscrieri și plăți, pregătire, reminder |
+| **Laudă** | Lista pentru următorul program în ordinea dorită, bibliotecă cu tonalitate, BPM și link de ascultat, repetiția, trupa din programul de slujire, trimite lista trupei |
+| **Echipă** | Slujire pe date (adaugi date noi cu aceleași posturi, posturi și echipe noi), voluntari cu abilități și zile, tinerii cu telefon, data nașterii și notițe |
+| **Mesaje** | Alegi cui trimiți (grupele, trupa, voluntarii, înscrișii la un program), trimiți în grupul de WhatsApp sau fiecăruia în parte, istoric |
+| **Setări** | Numele bisericii, numele tău, copie de siguranță (descarci și readuci), pornești de la zero, ieși |
 
-Totul se salvează: programe noi, momente din program, înscrieri și plăți, pregătire, sarcini, lista de cântări și cântări noi, cine slujește, mesajele trimise.
+Liderii intră cu o parolă comună și își scriu numele, ca aplicația să-i salute și să știe cine a trimis un mesaj.
 
 ## Pornire locală
 
@@ -33,18 +34,42 @@ Nu e nevoie de niciun serviciu extern. Datele stau într-un singur fișier SQLit
 
 ## Online
 
-Aplicația are nevoie de un server care păstrează fișierele între reporniri: un VPS, sau Railway, Render ori Fly.io cu un disc atașat. Pe Vercel datele nu s-ar păstra.
+Aplicația are nevoie de un server care păstrează fișierele între reporniri. Pe Vercel datele nu s-ar păstra.
 
-1. Setează `ADUNARE_PAROLA`: parola comună pe care o dai liderilor. Fără ea aplicația nu pornește online, pentru că are numere de telefon și notițe despre tineri.
-2. Opțional, `ADUNARE_DB` arată unde să fie fișierul cu date (pe discul atașat).
-3. `npm install && npm run build && npm start`
+### Railway (cel mai simplu)
+
+1. Pe [railway.com](https://railway.com) alege **New Project → Deploy from GitHub repo** și alege acest repository. Railway citește `railway.json` și construiește aplicația din `Dockerfile`.
+2. În serviciu, la **Variables**, adaugă `ADUNARE_PAROLA` cu parola pe care o dai liderilor.
+3. La **Settings → Volumes** (sau click dreapta pe serviciu → **Attach volume**) adaugă un volum cu calea **`/data`**. Aici stau datele; fără volum se pierd la fiecare actualizare.
+4. La **Settings → Networking** apasă **Generate Domain**. Primești o adresă de forma `adunare-xxxx.up.railway.app`.
+5. Deschide adresa, scrie parola și numele. Din **Setări → Pornește de la zero** ștergi datele de exemplu când ești gata să pui oamenii reali.
+
+### Pe un server propriu (VPS) cu Docker
+
+```bash
+echo "ADUNARE_PAROLA=parola-voastra" > .env
+docker compose up -d --build
+```
+
+Aplicația pornește pe portul 3000, iar datele stau în volumul `adunare-date`. Pune în față un HTTPS (de exemplu Caddy) ca parola să nu circule necriptat.
+
+### Variabile
+
+| Variabilă | Ce face |
+|---|---|
+| `ADUNARE_PAROLA` | Parola comună. Obligatorie online. Dacă o schimbi, toți trebuie să intre din nou. |
+| `ADUNARE_DB` | Unde e fișierul cu date (în Docker: `/data/adunare.db`). |
+| `ADUNARE_FARA_EXEMPLE` | `1` = la prima pornire nu pune date de exemplu. |
+
+Verificare de sănătate: `/api/sanatate`. Copie de siguranță: **Setări → Descarcă copia** (sau copiezi fișierul `adunare.db`).
 
 ## Structură
 
 ```
-app/            paginile (Panou, Programe, Laudă, Echipă, Mesaje)
-proxy.ts        parola de acces
-components/     piese comune: navigare, iconițe, carduri, notificări
+app/            paginile (Panou, Programe, Laudă, Echipă, Mesaje, Setări, Intrare)
+app/api/        copie de siguranță și verificare de sănătate
+proxy.ts        parola de acces (trimite la /intrare)
+components/     piese comune: navigare, iconițe, carduri, notificări, butonul de ștergere
 lib/            baza de date, salvări, tipuri, date de exemplu
 public/         iconițele aplicației
 ```
